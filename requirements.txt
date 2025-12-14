@@ -5,4 +5,3 @@ supervision==0.16.0
 numpy==1.26.2
 reportlab==4.0.7
 pillow==10.1.0
-gunicorn==21.2.0
