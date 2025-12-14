@@ -1,0 +1,8 @@
+flask==3.0.0
+opencv-python-headless==4.8.1.78
+ultralytics==8.0.200
+supervision==0.16.0
+numpy==1.26.2
+reportlab==4.0.7
+pillow==10.1.0
+gunicorn==21.2.0

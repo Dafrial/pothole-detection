@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pothole Detection - YOLOv8</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .logo-text h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: linear-gradient(90deg, #fff, #e94560);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text p {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .model-badge {
+            background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.5rem;
+            border-radius: 12px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #e94560 0%, #c41e3a 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .content-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr 350px;
+            }
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .upload-area:hover {
+            border-color: #e94560;
+            background: rgba(233, 69, 96, 0.1);
+        }
+
+        .upload-area .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-area p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        .upload-area input {
+            display: none;
+        }
+
+        /* Image/Video Display */
+        .media-container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            min-height: 300px;
+        }
+
+        .media-container img,
+        .media-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #e94560 0%, #c41e3a 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+            color: white;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00b4d8 0%, #00ff88 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 0.3rem;
+        }
+
+        /* Results Gallery */
+        .results-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .gallery-item {
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+        }
+
+        .gallery-item .badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #e94560;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #e94560;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Camera specific */
+        .camera-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            font-size: 0.8rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #888;
+        }
+
+        .status-dot.active {
+            background: #00ff88;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .control-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .control-row .btn {
+            flex: 1;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        select option {
+            background: #1a1a2e;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0, 180, 216, 0.95);
+            color: white;
+            padding: 0.8rem 1.2rem;
+            border-radius: 10px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: rgba(233, 69, 96, 0.95);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 1.5rem;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.8rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00b4d8, #00ff88);
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">🛣️</div>
+            <div class="logo-text">
+                <h1>Pothole Detection</h1>
+                <p>Deteksi Lubang Jalan</p>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <select id="modelSelect" onchange="switchModel()"
+                style="padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 0.85rem; cursor: pointer;">
+                <option value="model1">Loading...</option>
+            </select>
+            <div class="model-badge" id="modelBadge">🤖 YOLOv8</div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('camera')">📹 Kamera</button>
+            <button class="tab-btn" onclick="switchTab('photo')">📷 Upload Foto</button>
+            <button class="tab-btn" onclick="switchTab('video')">🎬 Upload Video</button>
+        </div>
+
+        <!-- Tab 1: Camera -->
+        <div id="tab-camera" class="tab-content active">
+            <div class="content-grid">
+                <div class="panel">
+                    <div class="panel-title">
+                        📹 Kamera Real-time
+                        <div class="status-indicator" style="margin-left: auto;">
+                            <span class="status-dot" id="statusDot"></span>
+                            <span id="statusText">Tidak Aktif</span>
+                        </div>
+                    </div>
+                    <div class="media-container" id="cameraContainer">
+                        <div class="upload-area" id="cameraPlaceholder">
+                            <div class="icon">📷</div>
+                            <p>Pilih kamera dan klik "Mulai Deteksi"</p>
+                        </div>
+                        <video id="cameraPreview" class="camera-preview" autoplay playsinline
+                            style="display: none;"></video>
+                        <canvas id="captureCanvas" style="display: none;"></canvas>
+                        <img id="detectionResult" style="display: none;">
+                    </div>
+                    <select id="cameraSelect">
+                        <option value="">Memuat kamera...</option>
+                    </select>
+                    <div class="control-row">
+                        <button class="btn btn-secondary" id="startBtn" onclick="startCamera()">▶️ Mulai</button>
+                        <button class="btn btn-primary" id="stopBtn" onclick="stopCamera()" disabled
+                            style="background: #666;">⏹️ Stop</button>
+                        <button class="btn btn-primary" id="reportBtn" onclick="generateReport()" disabled>📄
+                            Laporan</button>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-title">📊 Statistik</div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="camCurrent">0</div>
+                            <div class="stat-label">Terdeteksi</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="camTotal">0</div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="camMax">0</div>
+                            <div class="stat-label">Maks/Frame</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="camFrames">0</div>
+                            <div class="stat-label">Frame</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Photo Upload -->
+        <div id="tab-photo" class="tab-content">
+            <div class="content-grid">
+                <div class="panel">
+                    <div class="panel-title">📷 Upload Foto</div>
+                    <div class="upload-area" id="photoUploadArea"
+                        onclick="document.getElementById('photoInput').click()">
+                        <div class="icon">📷</div>
+                        <p>Klik atau drag foto ke sini</p>
+                        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Format: JPG, PNG</p>
+                        <input type="file" id="photoInput" accept="image/*" onchange="handlePhotoUpload(event)">
+                    </div>
+                    <div class="media-container" id="photoResultContainer" style="display: none;">
+                        <img id="photoResult">
+                    </div>
+                    <div class="control-row" id="photoActions" style="display: none;">
+                        <button class="btn btn-secondary" onclick="resetPhoto()">🔄 Upload Lagi</button>
+                        <button class="btn btn-primary" id="photoReportBtn" onclick="downloadPhotoReport()">📄 Download
+                            Laporan PDF</button>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-title">📊 Hasil Deteksi</div>
+                    <div id="photoStats">
+                        <p style="color: rgba(255,255,255,0.5); text-align: center; padding: 2rem;">Upload foto untuk
+                            melihat hasil</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Video Upload -->
+        <div id="tab-video" class="tab-content">
+            <div class="content-grid">
+                <div class="panel">
+                    <div class="panel-title">🎬 Upload Video</div>
+                    <div class="upload-area" id="videoUploadArea"
+                        onclick="document.getElementById('videoInput').click()">
+                        <div class="icon">🎬</div>
+                        <p>Klik atau drag video ke sini</p>
+                        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Format: MP4, WebM (Maks 50MB)</p>
+                        <input type="file" id="videoInput" accept="video/*" onchange="handleVideoUpload(event)">
+                    </div>
+                    <div id="videoLoading" style="display: none;">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p>Memproses video...</p>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="videoProgress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="videoResults" style="display: none;">
+                        <div class="results-gallery" id="videoGallery"></div>
+                        <div class="control-row">
+                            <button class="btn btn-secondary" onclick="resetVideo()">🔄 Upload Lagi</button>
+                            <button class="btn btn-primary" id="videoReportBtn" onclick="downloadVideoReport()">📄
+                                Download Laporan PDF</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-title">📊 Hasil Analisis Video</div>
+                    <div id="videoStats">
+                        <p style="color: rgba(255,255,255,0.5); text-align: center; padding: 2rem;">Upload video untuk
+                            melihat hasil</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>© 2025 Road Pothole Detection | YOLOv8</p>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Global variables
+        let isRunning = false;
+        let currentStream = null;
+        let photoResultData = null;
+        let videoResultData = null;
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+
+        // Toast notification
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show' + (isError ? ' error' : '');
+            setTimeout(() => { toast.className = 'toast'; }, 3000);
+        }
+
+        // ==================== MODEL SWITCHING ====================
+        async function loadModels() {
+            try {
+                const res = await fetch('/get_models');
+                const data = await res.json();
+
+                const select = document.getElementById('modelSelect');
+                select.innerHTML = '';
+
+                data.models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.key;
+                    option.textContent = model.name;
+                    if (model.active) option.selected = true;
+                    select.appendChild(option);
+                });
+            } catch (err) {
+                console.error('Failed to load models:', err);
+            }
+        }
+
+        async function switchModel() {
+            const select = document.getElementById('modelSelect');
+            const modelKey = select.value;
+
+            select.disabled = true;
+            showToast('⏳ Memuat model...');
+
+            try {
+                const res = await fetch('/switch_model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model_key: modelKey })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast('✅ Model berhasil diganti: ' + data.current_model);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (err) {
+                showToast('❌ Gagal ganti model: ' + err.message, true);
+            }
+
+            select.disabled = false;
+        }
+
+        // ==================== CAMERA ====================
+        async function initCameras() {
+            try {
+                await navigator.mediaDevices.getUserMedia({ video: true });
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
+
+                const select = document.getElementById('cameraSelect');
+                select.innerHTML = '';
+
+                videoDevices.forEach((device, i) => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.textContent = device.label || `Kamera ${i + 1}`;
+                    select.appendChild(option);
+                });
+            } catch (err) {
+                document.getElementById('cameraSelect').innerHTML = '<option>Izinkan akses kamera</option>';
+            }
+        }
+
+        async function startCamera() {
+            const deviceId = document.getElementById('cameraSelect').value;
+            if (!deviceId) {
+                showToast('Pilih kamera dulu', true);
+                return;
+            }
+
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: { exact: deviceId }, width: 640, height: 480 }
+                });
+
+                const preview = document.getElementById('cameraPreview');
+                preview.srcObject = currentStream;
+                preview.style.display = 'block';
+                document.getElementById('cameraPlaceholder').style.display = 'none';
+
+                await fetch('/start_session', { method: 'POST' });
+
+                isRunning = true;
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('statusDot').classList.add('active');
+                document.getElementById('statusText').textContent = 'Mendeteksi...';
+
+                captureAndDetect();
+                showToast('✅ Deteksi dimulai!');
+            } catch (err) {
+                showToast('Gagal akses kamera: ' + err.message, true);
+            }
+        }
+
+        async function captureAndDetect() {
+            if (!isRunning) return;
+
+            const canvas = document.getElementById('captureCanvas');
+            const preview = document.getElementById('cameraPreview');
+            canvas.width = preview.videoWidth || 640;
+            canvas.height = preview.videoHeight || 480;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(preview, 0, 0);
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+
+            try {
+                const res = await fetch('/detect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    document.getElementById('detectionResult').src = data.image;
+                    document.getElementById('detectionResult').style.display = 'block';
+                    preview.style.display = 'none';
+
+                    document.getElementById('camCurrent').textContent = data.detections;
+                    document.getElementById('camTotal').textContent = data.total_detections;
+                    document.getElementById('camMax').textContent = data.max_in_frame;
+                    document.getElementById('camFrames').textContent = data.frame_count;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+
+            if (isRunning) requestAnimationFrame(captureAndDetect);
+        }
+
+        async function stopCamera() {
+            isRunning = false;
+            if (currentStream) {
+                currentStream.getTracks().forEach(t => t.stop());
+            }
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('reportBtn').disabled = false;
+            document.getElementById('statusDot').classList.remove('active');
+            document.getElementById('statusText').textContent = 'Berhenti';
+            showToast('⏹️ Deteksi dihentikan');
+        }
+
+        async function generateReport() {
+            document.getElementById('reportBtn').disabled = true;
+            document.getElementById('reportBtn').textContent = '⏳ Membuat...';
+
+            try {
+                const res = await fetch('/stop_session', { method: 'POST' });
+                const data = await res.json();
+                if (data.success && data.report.pdf_file) {
+                    window.open('/download_pdf/' + data.report.pdf_file, '_blank');
+                    showToast('📄 Laporan PDF berhasil dibuat!');
+                }
+            } catch (err) {
+                showToast('Gagal buat laporan', true);
+            }
+
+            document.getElementById('reportBtn').textContent = '📄 Laporan';
+            document.getElementById('statusText').textContent = 'Selesai';
+        }
+
+        // ==================== PHOTO UPLOAD ====================
+        async function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                const imageData = e.target.result;
+
+                document.getElementById('photoUploadArea').style.display = 'none';
+                document.getElementById('photoResultContainer').style.display = 'block';
+                document.getElementById('photoResult').src = imageData;
+                document.getElementById('photoStats').innerHTML = '<div class="loading"><div class="spinner"></div><p>Memproses...</p></div>';
+
+                try {
+                    const res = await fetch('/upload_image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: imageData })
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        document.getElementById('photoResult').src = data.image;
+                        photoResultData = data;  // Store entire response including pdf_file
+                        document.getElementById('photoActions').style.display = 'flex';
+
+                        document.getElementById('photoStats').innerHTML = `
+                            <div class="stats-grid">
+                                <div class="stat-card" style="grid-column: span 2;">
+                                    <div class="stat-value">${data.detections}</div>
+                                    <div class="stat-label">Lubang Terdeteksi</div>
+                                </div>
+                            </div>
+                            ${data.detections > 0 ? '<p style="color: #ff6b6b; text-align: center; margin-top: 1rem;">🚨 Ditemukan lubang jalan!</p>' : '<p style="color: #00ff88; text-align: center; margin-top: 1rem;">✅ Tidak ada lubang terdeteksi</p>'}
+                        `;
+                        showToast('✅ Analisis selesai!');
+                    } else {
+                        throw new Error(data.error);
+                    }
+                } catch (err) {
+                    document.getElementById('photoStats').innerHTML = '<p style="color: #ff6b6b; text-align: center;">❌ Gagal memproses gambar</p>';
+                    showToast('Gagal: ' + err.message, true);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetPhoto() {
+            document.getElementById('photoUploadArea').style.display = 'flex';
+            document.getElementById('photoResultContainer').style.display = 'none';
+            document.getElementById('photoActions').style.display = 'none';
+            document.getElementById('photoInput').value = '';
+            document.getElementById('photoStats').innerHTML = '<p style="color: rgba(255,255,255,0.5); text-align: center; padding: 2rem;">Upload foto untuk melihat hasil</p>';
+            photoResultData = null;
+        }
+
+        function downloadPhotoReport() {
+            if (photoResultData && photoResultData.pdf_file) {
+                window.open('/download_pdf/' + photoResultData.pdf_file, '_blank');
+                showToast('📄 Laporan PDF berhasil didownload!');
+            } else {
+                showToast('Tidak ada lubang terdeteksi, laporan tidak dibuat', true);
+            }
+        }
+
+        // ==================== VIDEO UPLOAD ====================
+        async function handleVideoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 50 * 1024 * 1024) {
+                showToast('File terlalu besar (maks 50MB)', true);
+                return;
+            }
+
+            document.getElementById('videoUploadArea').style.display = 'none';
+            document.getElementById('videoLoading').style.display = 'block';
+            document.getElementById('videoStats').innerHTML = '<div class="loading"><div class="spinner"></div><p>Menganalisis video...</p></div>';
+
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress = Math.min(progress + Math.random() * 10, 90);
+                document.getElementById('videoProgress').style.width = progress + '%';
+            }, 500);
+
+            const formData = new FormData();
+            formData.append('video', file);
+
+            try {
+                const res = await fetch('/upload_video', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                clearInterval(progressInterval);
+                document.getElementById('videoProgress').style.width = '100%';
+
+                if (data.success) {
+                    const results = data.results;
+
+                    document.getElementById('videoLoading').style.display = 'none';
+                    document.getElementById('videoResults').style.display = 'block';
+
+                    // Show sample frames
+                    const gallery = document.getElementById('videoGallery');
+                    gallery.innerHTML = '';
+                    results.sample_frames.forEach((frame, i) => {
+                        gallery.innerHTML += `
+                            <div class="gallery-item">
+                                <img src="${frame.image}" alt="Frame ${i + 1}">
+                                <span class="badge">${frame.detections} lubang</span>
+                            </div>
+                        `;
+                    });
+
+                    document.getElementById('videoStats').innerHTML = `
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value">${results.total_detections}</div>
+                                <div class="stat-label">Total Deteksi</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${results.frames_processed}</div>
+                                <div class="stat-label">Frame Diproses</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${results.max_in_frame}</div>
+                                <div class="stat-label">Maks/Frame</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${results.frames_with_detections}</div>
+                                <div class="stat-label">Frame + Lubang</div>
+                            </div>
+                        </div>
+                        ${results.total_detections > 0 ? '<p style="color: #ff6b6b; text-align: center; margin-top: 1rem;">🚨 Ditemukan lubang di video!</p>' : '<p style="color: #00ff88; text-align: center; margin-top: 1rem;">✅ Tidak ada lubang terdeteksi</p>'}
+                    `;
+                    videoResultData = results;  // Store for PDF download
+                    showToast('✅ Analisis video selesai!');
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (err) {
+                clearInterval(progressInterval);
+                document.getElementById('videoLoading').style.display = 'none';
+                document.getElementById('videoUploadArea').style.display = 'flex';
+                document.getElementById('videoStats').innerHTML = '<p style="color: #ff6b6b; text-align: center;">❌ Gagal memproses video</p>';
+                showToast('Gagal: ' + err.message, true);
+            }
+        }
+
+        function resetVideo() {
+            document.getElementById('videoUploadArea').style.display = 'flex';
+            document.getElementById('videoResults').style.display = 'none';
+            document.getElementById('videoInput').value = '';
+            document.getElementById('videoGallery').innerHTML = '';
+            document.getElementById('videoStats').innerHTML = '<p style="color: rgba(255,255,255,0.5); text-align: center; padding: 2rem;">Upload video untuk melihat hasil</p>';
+            videoResultData = null;
+        }
+
+        function downloadVideoReport() {
+            if (videoResultData && videoResultData.pdf_file) {
+                window.open('/download_pdf/' + videoResultData.pdf_file, '_blank');
+                showToast('📄 Laporan PDF berhasil didownload!');
+            } else {
+                showToast('Tidak ada lubang terdeteksi, laporan tidak dibuat', true);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initCameras();
+            loadModels();
+        });
+    </script>
+</body>
+
+</html>

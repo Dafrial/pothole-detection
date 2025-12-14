@@ -1,0 +1,30 @@
+# Byte-compiled
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated folders
+reports/
+captures/
+.gradio/
+
+# Old/unused files
+app_gradio.py
+requirements_hf.txt
+README_HF.md
+Pothole-Computer-Vision-Project/
+
+# Video files (too large)
+*.mp4
